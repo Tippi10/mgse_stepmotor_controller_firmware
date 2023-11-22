@@ -1,5 +1,5 @@
-# nanoCAN_LV_Controller
+# nanoCAN_StepMotor_Controller
 
-Programs to execute on LV controller board. For LV open and close control
+Programs to execute on LV controller board. For HTTP-4 MGSE arm extend/retreve control.
 
-reassigned to @Dennis
+reassigned to @Tippi
