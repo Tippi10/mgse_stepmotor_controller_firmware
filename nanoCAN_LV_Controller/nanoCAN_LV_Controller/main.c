@@ -128,6 +128,30 @@ void CANhandle(void)
 	} //CAN available
 }
 
+void LVReset(uint8_t Addr)
+{
+	// �b�o�̲K�[�{���X�A�H���ʦܭ��I�A�i��ݭn�˴��L�ʶ}����Ĳ�o���A
+	// �ϥ� LVPosReset �M LVSetDegree ��ơA�ھڷL�ʶ}�������A�i��A�����]�w
+	LVPosReset(Addr);
+	LVSetDegree(Addr, 0); // �N LV ���ʦܭ��I�]���] 0 �׬O���I�^
+}
+
+void LVMoveForward5cm(uint8_t Addr)
+{
+	// ��{ LV �e�i 5cm ���\��
+	// �ϥ� LVSetDegree ��ơA�p��һݪ����סA�M��]�w LV ������
+	// �@��=200 �B = 10 �� = 4cm�A�]�� 5cm �� 200 / 4 * 5 = 50 �B
+	uint8_t currentAngle = LV_currentAngle[ADDR2NUM(Addr)];
+	LVSetDegree(Addr, currentAngle + 50);
+}
+
+void LVMoveBackward5cm(uint8_t Addr)
+{
+	uint8_t currentAngle = LV_currentAngle[ADDR2NUM(Addr)];
+	LVSetDegree(Addr, currentAngle - 50);
+}
+
+
 void LVPosReset(uint8_t Addr)
 {
 	switch (Addr)
