@@ -130,25 +130,22 @@ void CANhandle(void)
 
 void LVReset(uint8_t Addr)
 {
-	// �b�o�̲K�[�{���X�A�H���ʦܭ��I�A�i��ݭn�˴��L�ʶ}����Ĳ�o���A
-	// �ϥ� LVPosReset �M LVSetDegree ��ơA�ھڷL�ʶ}�������A�i��A�����]�w
 	LVPosReset(Addr);
-	LVSetDegree(Addr, 0); // �N LV ���ʦܭ��I�]���] 0 �׬O���I�^
+	LVSetDegree(Addr, 0); // Move LV to the origin (assuming 0 degrees is the origin)
 }
 
 void LVMoveForward5cm(uint8_t Addr)
 {
-	// ��{ LV �e�i 5cm ���\��
-	// �ϥ� LVSetDegree ��ơA�p��һݪ����סA�M��]�w LV ������
-	// �@��=200 �B = 10 �� = 4cm�A�]�� 5cm �� 200 / 4 * 5 = 50 �B
+	// One revolution = 200 steps = 10 degrees = 4cm, so 5cm is 200 / 4 * 5 = 50 steps
+	// Use the LVSetDegree function, calculate the required angle, and then set LV's angle
 	uint8_t currentAngle = LV_currentAngle[ADDR2NUM(Addr)];
-	LVSetDegree(Addr, currentAngle + 50);
+	LVSetDegree(Addr, currentAngle + 50); // Move LV forward by 5cm
 }
 
 void LVMoveBackward5cm(uint8_t Addr)
 {
 	uint8_t currentAngle = LV_currentAngle[ADDR2NUM(Addr)];
-	LVSetDegree(Addr, currentAngle - 50);
+	LVSetDegree(Addr, currentAngle - 50); // Move LV backward by 5cm
 }
 
 
