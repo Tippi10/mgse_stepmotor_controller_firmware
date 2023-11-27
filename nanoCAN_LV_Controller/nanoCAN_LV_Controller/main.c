@@ -139,7 +139,7 @@ void LVMoveForward5cm(uint8_t Addr)
 	// One revolution = 200 steps = 10 degrees = 4cm, so 5cm is 200 / 4 * 5 = 50 steps
 	// Use the LVSetDegree function, calculate the required angle, and then set LV's angle
 	uint8_t currentAngle = LV_currentAngle[ADDR2NUM(Addr)];
-	LVSetDegree(Addr, currentAngle + 50); // Move LV forward by 5cm
+	LVSetDegree(Addr, currentAngle + 50); // Move LV forward by 5cm //this part will have problem
 }
 
 void LVMoveBackward5cm(uint8_t Addr)
@@ -167,12 +167,12 @@ void LVPosReset(uint8_t Addr)
 			break;
 	}
 }
-void LVSetDegree(uint8_t Addr, uint8_t angle) //set {LV} to {degree}
+void LVSetDegree(uint8_t Addr, uint8_t angle) //set {LV} to {degree} //change setdegree to sth else to make it more clear
 {
 	switch (Addr)
 	{
 		case LV_1_ADDR:
-			LV_stepToGo[0] = (angle - LV_currentAngle[0]) * 20; //  64*200/360 = 35.55555555555
+			LV_stepToGo[0] = (angle - LV_currentAngle[0]) * 20; //  64*200/360 = 35.55555555555 //
 			break;
 		case LV_2_ADDR:
 			LV_stepToGo[1] = (angle - LV_currentAngle[1]) * 20; //  64*200/360 = 35.55555555555
