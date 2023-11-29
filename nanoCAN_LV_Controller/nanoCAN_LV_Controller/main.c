@@ -27,14 +27,14 @@ void CANhandle(void);
 
 void LVhandle(void);
 void LVPosReset(uint8_t Addr);
-void LVSetDegree(uint8_t Addr, uint8_t angle); //set {LV} to {degree}
+void LVSetLength(uint8_t Addr, uint8_t angle); //set {LV} to {length} //no change in angle 'cause it's too time-wasting
 void stepOutput(uint8_t num, bool output);
 void enOutput(uint8_t num, bool output);
 void dirOutput(uint8_t num, bool output);
 int8_t ADDR2NUM(uint8_t ADDR);
 uint8_t readOPB(uint8_t num);
 int16_t LV_stepToGo[4] = {0, 0, 0, 0};
-uint8_t LV_currentAngle[4] = {0, 0, 0, 0};
+uint8_t LV_currentlength[4] = {0, 0, 0, 0};
 bool LV_HL = true; //step high or low
 
 bool done = true;
@@ -111,60 +111,49 @@ void CANhandle(void)
 	if( CAN_available() )
 	{
 		CANRead();
-		if (CAN_MSG[0] == CAN_MSG[1])
+		if (CAN_MSG[0] == 0) //length set to what we enter
 		{
-			if (CAN_MSG[1] == CAN_MSG[2])
+			if (CAN_MSG[1] == 0 && LV_POS_RST_flag[0] == 0 && done == true)
 			{
-				
-				if(CAN_MSG[0] == 0xFF) //angle set to 0
-				{
-					CAN_MSG[0] = 0;
-					LV_currentAngle[0] = CAN_MSG[0];
-					LVPosReset(0x01);
-				}
-				
-				if (LV_POS_RST_flag[0] == 0 && done == true) //angle set to what we enter
-				{
-					LVSetDegree(0x01,CAN_MSG[0]);
-					LV_currentAngle[0] = CAN_MSG[0];
-					done = false;
-				}
+				LV_currentlength[0] = CAN_MSG[1];
+				LVPosReset(0x01);
+				done = false;
+			}
+			else if (CAN_MSG[1] != 0 && LV_POS_RST_flag[0] == 0 && done == true)
+			{
+				CAN_MSG[1] = (CAN_MSG[1] % 16) + ((CAN_MSG[1] / 16) % 16) * 10;
+				LVSetLength(0x01,CAN_MSG[1]);
+				LV_currentlength[0] = CAN_MSG[1];
+				done = false;
 			}
 		}
-	} //CAN available
-}
-
-void CANhandle(void)
-{
-	if( CAN_available() )
-	{
-		CANRead();
-		if (CAN_MSG[0] == 0) //length set to what we enter
+		else if (CAN_MSG[0] == 1) //decrease the length we enter
 		{
 			if (CAN_MSG[1] == 0)
 			{
-				LV_currentAngle[0] = CAN_MSG[1];
-				LVPosReset(0x01);
+				
 			}
-			else
+			else if (CAN_MSG[1] != 0 && LV_POS_RST_flag[0] == 0 && done == true)
 			{
-				if (LV_POS_RST_flag[0] == 0 && done == true)
-				{
-					LVSetDegree(0x01,CAN_MSG[1]);
-					LV_currentAngle[0] = CAN_MSG[1];
-					done = false;
-				}
+				CAN_MSG[1] = (CAN_MSG[1] % 16) + ((CAN_MSG[1] / 16) % 16) * 10;
+				LVSetLength(0x01, LV_currentlength[0] - CAN_MSG[1]);
+				LV_currentlength[0] = LV_currentlength[0] - CAN_MSG[1];
+				done = false;
 			}
 		}
-		else if (CAN_MSG[0] == 0x01) //decrease the length we enter
+		else if (CAN_MSG[0] == 2) //increase the length we enter
 		{
-			
-		}
-		else if (CAN_MSG[0] == 0x02) //increase the length we enter
-		{
-		}
-		else {
-			
+			if (CAN_MSG[1] == 0)
+			{
+				
+			}
+			else if (CAN_MSG[1] != 0 && LV_POS_RST_flag[0] == 0 && done == true)
+			{
+				CAN_MSG[1] = (CAN_MSG[1] % 16) + ((CAN_MSG[1] / 16) % 16) * 10;
+				LVSetLength(0x01, LV_currentlength[0] + CAN_MSG[1]);
+				LV_currentlength[0] = LV_currentlength[0] + CAN_MSG[1];
+				done = false;
+			}
 		}
 	} //CAN available
 }
@@ -188,21 +177,21 @@ void LVPosReset(uint8_t Addr)
 	}
 }
 
-void LVSetDegree(uint8_t Addr, uint8_t angle) //set {LV} to {degree} //change LVSetDegree to sth else to make it more clear
+void LVSetLength(uint8_t Addr, uint8_t angle) //set {LV} to {degree} //change LVSetDegree to sth else to make it more clear
 {
 	switch (Addr)
 	{
 		case LV_1_ADDR:
-			LV_stepToGo[0] = (angle - LV_currentAngle[0]) * 20; //  64*200/360 = 35.55555555555 //
+			LV_stepToGo[0] = (angle - LV_currentlength[0]) * 50; //  200 steps per 4 cm // 50 steps per 1 cm
 			break;
 		case LV_2_ADDR:
-			LV_stepToGo[1] = (angle - LV_currentAngle[1]) * 20; //  64*200/360 = 35.55555555555
+			LV_stepToGo[0] = (angle - LV_currentlength[0]) * 50; //  200 steps per 4 cm // 50 steps per 1 cm
 			break;
 		case LV_3_ADDR:
-			LV_stepToGo[2] = (angle - LV_currentAngle[2]) * 20; //  64*200/360 = 35.55555555555
+			LV_stepToGo[0] = (angle - LV_currentlength[0]) * 50; //  200 steps per 4 cm // 50 steps per 1 cm
 			break;
 		case LV_4_ADDR:
-			LV_stepToGo[3] = (angle - LV_currentAngle[3]) * 20; //  64*200/360 = 35.55555555555
+			LV_stepToGo[0] = (angle - LV_currentlength[0]) * 50; //  200 steps per 4 cm // 50 steps per 1 cm
 			break;
 	}
 	
@@ -245,7 +234,7 @@ void LVhandle(void)
 			case 4:									//reset pos done
 				LV_state[i] = state_FTRN;
 				LV_POS_RST_flag[i] = 0;
-				LV_currentAngle[i] = 0;
+				LV_currentlength[i] = 0;
 				break;
 		}
 		
