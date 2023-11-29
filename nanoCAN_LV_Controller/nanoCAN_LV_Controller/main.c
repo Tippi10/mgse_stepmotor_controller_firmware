@@ -96,10 +96,16 @@ void GPIO_select()
 	GPIO_MODE_INPUT(phaseA);
 	GPIO_MODE_INPUT(phaseB);
 }
+
 void Error_Handler() //Do while WDT_VECT triggered
 {
 
 }
+
+/////////////////////////////////////////////////
+///////////Things i need to modify///////////////
+/////////////////////////////////////////////////
+
 void CANhandle(void)
 {
 	if( CAN_available() )
@@ -110,14 +116,14 @@ void CANhandle(void)
 			if (CAN_MSG[1] == CAN_MSG[2])
 			{
 				
-				if(CAN_MSG[0] == 0xFF)
+				if(CAN_MSG[0] == 0xFF) //angle set to 0
 				{
 					CAN_MSG[0] = 0;
 					LV_currentAngle[0] = CAN_MSG[0];
 					LVPosReset(0x01);
 				}
 				
-				if (LV_POS_RST_flag[0] == 0 && done == true)
+				if (LV_POS_RST_flag[0] == 0 && done == true) //angle set to what we enter
 				{
 					LVSetDegree(0x01,CAN_MSG[0]);
 					LV_currentAngle[0] = CAN_MSG[0];
@@ -128,26 +134,40 @@ void CANhandle(void)
 	} //CAN available
 }
 
-void LVReset(uint8_t Addr)
+void CANhandle(void)
 {
-	LVPosReset(Addr);
-	LVSetDegree(Addr, 0); // Move LV to the origin (assuming 0 degrees is the origin)
+	if( CAN_available() )
+	{
+		CANRead();
+		if (CAN_MSG[0] == 0) //length set to what we enter
+		{
+			if (CAN_MSG[1] == 0)
+			{
+				LV_currentAngle[0] = CAN_MSG[1];
+				LVPosReset(0x01);
+			}
+			else
+			{
+				if (LV_POS_RST_flag[0] == 0 && done == true)
+				{
+					LVSetDegree(0x01,CAN_MSG[1]);
+					LV_currentAngle[0] = CAN_MSG[1];
+					done = false;
+				}
+			}
+		}
+		else if (CAN_MSG[0] == 0x01) //decrease the length we enter
+		{
+			
+		}
+		else if (CAN_MSG[0] == 0x02) //increase the length we enter
+		{
+		}
+		else {
+			
+		}
+	} //CAN available
 }
-
-void LVMoveForward5cm(uint8_t Addr)
-{
-	// One revolution = 200 steps = 10 degrees = 4cm, so 5cm is 200 / 4 * 5 = 50 steps
-	// Use the LVSetDegree function, calculate the required angle, and then set LV's angle
-	uint8_t currentAngle = LV_currentAngle[ADDR2NUM(Addr)];
-	LVSetDegree(Addr, currentAngle + 50); // Move LV forward by 5cm //this part will have problem
-}
-
-void LVMoveBackward5cm(uint8_t Addr)
-{
-	uint8_t currentAngle = LV_currentAngle[ADDR2NUM(Addr)];
-	LVSetDegree(Addr, currentAngle - 50); // Move LV backward by 5cm
-}
-
 
 void LVPosReset(uint8_t Addr)
 {
@@ -167,7 +187,8 @@ void LVPosReset(uint8_t Addr)
 			break;
 	}
 }
-void LVSetDegree(uint8_t Addr, uint8_t angle) //set {LV} to {degree} //change setdegree to sth else to make it more clear
+
+void LVSetDegree(uint8_t Addr, uint8_t angle) //set {LV} to {degree} //change LVSetDegree to sth else to make it more clear
 {
 	switch (Addr)
 	{
@@ -186,6 +207,11 @@ void LVSetDegree(uint8_t Addr, uint8_t angle) //set {LV} to {degree} //change se
 	}
 	
 }
+
+/////////////////////////////////////////////////
+/////////////Don't give it a shxt////////////////
+/////////////////////////////////////////////////
+
 void LVhandle(void)
 {
 	for(int i = 0; i<4; i++)	//pos reset handle
