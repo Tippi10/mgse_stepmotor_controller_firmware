@@ -54,10 +54,10 @@ extern uint8_t CAN_DATATOSEND[8];
 extern int8_t CAN_MSGLEN;
 
 //define encoder
-#define PLATE_90_360 0
-#define PLATE_0_30 1
-#define PLATE_30_60 2
-#define PLATE_60_90 3
+#define LENGTH_0_60 0
+#define LENGTH_60 1
+#define LENGTH_0 2
+#define LENGTH_error 3
 
 
 //define LV protocol 
