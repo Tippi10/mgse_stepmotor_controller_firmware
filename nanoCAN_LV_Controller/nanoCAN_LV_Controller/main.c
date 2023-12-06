@@ -59,7 +59,6 @@ void setup()
 {
 	CAN_initialize(0x000);
 	GPIO_HIGH(V12_ctrl);
-	LVPosReset(0x01);
 }
 
 void loop()
