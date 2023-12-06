@@ -54,8 +54,8 @@ extern uint8_t CAN_DATATOSEND[8];
 extern int8_t CAN_MSGLEN;
 
 //define encoder
-#define LENGTH_0_60 0
-#define LENGTH_60 1
+#define LENGTH_0_Max 0
+#define LENGTH_Max 1
 #define LENGTH_0 2
 #define LENGTH_error 3
 

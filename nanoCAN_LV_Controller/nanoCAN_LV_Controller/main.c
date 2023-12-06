@@ -24,15 +24,18 @@ void CANhandle(void);
 #define LV_2_ADDR 0x02
 #define LV_3_ADDR 0x03
 #define LV_4_ADDR 0x04
+#define Maxlength 60
+#define step_per_cm 50
 
 void LVhandle(void);
 void LVPosReset(uint8_t Addr);
+void LVPosMax(uint8_t Addr)
 void LVSetLength(uint8_t Addr, uint8_t angle); //set {LV} to {length} //no change in angle 'cause it's too time-wasting
 void stepOutput(uint8_t num, bool output);
 void enOutput(uint8_t num, bool output);
 void dirOutput(uint8_t num, bool output);
 int8_t ADDR2NUM(uint8_t ADDR);
-uint8_t readOPB(uint8_t num);
+uint8_t readLENGTH(uint8_t num);
 int16_t LV_stepToGo[4] = {0, 0, 0, 0};
 uint8_t LV_currentlength[4] = {0, 0, 0, 0};
 bool LV_HL = true; //step high or low
@@ -118,8 +121,14 @@ void CANhandle(void)
 				LV_currentlength[0] = CAN_MSG[1];
 				LVPosReset(0x01);
 				done = false;
+			}
+			else if (CAN_MSG[1] == Maxlength && LV_POS_RST_flag[0] == 0 && done == true)
+			{
+				LV_currentlength[0] = CAN_MSG[1];
+				LVPosMax(0x01);
+				done = false;
 			}		
-			else if (CAN_MSG[1] != 0 && LV_POS_RST_flag[0] == 0 && done == true)
+			else
 			{
 				CAN_MSG[1] = (CAN_MSG[1] % 16) + ((CAN_MSG[1] / 16) % 16) * 10;
 				LVSetLength(0x01,CAN_MSG[1]);
@@ -177,24 +186,42 @@ void LVPosReset(uint8_t Addr)
 	}
 }
 
+void LVPosMax(uint8_t Addr)
+{
+	switch (Addr)
+	{
+		case LV_1_ADDR:
+			LV_POS_RST_flag[0] = 2;
+			break;
+		case LV_2_ADDR:
+			LV_POS_RST_flag[1] = 2;
+			break;
+		case LV_3_ADDR:
+			LV_POS_RST_flag[2] = 2;
+			break;
+		case LV_4_ADDR:
+			LV_POS_RST_flag[3] = 2;
+			break;
+	}
+}
+
 void LVSetLength(uint8_t Addr, uint8_t length) //set {LV} to {degree} //change LVSetDegree to sth else to make it more clear
 {
 	switch (Addr)
 	{
 		case LV_1_ADDR:
-			LV_stepToGo[0] = (length - LV_currentlength[0]) * 50; //  200 steps per 4 cm // 50 steps per 1 cm
+			LV_stepToGo[0] = (length - LV_currentlength[0]) * step_per_cm ; //  200 steps per 4 cm // 50 steps per 1 cm
 			break;
 		case LV_2_ADDR:
-			LV_stepToGo[0] = (length - LV_currentlength[0]) * 50; //  200 steps per 4 cm // 50 steps per 1 cm
+			LV_stepToGo[0] = (length - LV_currentlength[0]) * step_per_cm ; //  200 steps per 4 cm // 50 steps per 1 cm
 			break;
 		case LV_3_ADDR:
-			LV_stepToGo[0] = (length - LV_currentlength[0]) * 50; //  200 steps per 4 cm // 50 steps per 1 cm
+			LV_stepToGo[0] = (length - LV_currentlength[0]) * step_per_cm ; //  200 steps per 4 cm // 50 steps per 1 cm
 			break;
 		case LV_4_ADDR:
-			LV_stepToGo[0] = (length - LV_currentlength[0]) * 50; //  200 steps per 4 cm // 50 steps per 1 cm
+			LV_stepToGo[0] = (length - LV_currentlength[0]) * step_per_cm ; //  200 steps per 4 cm // 50 steps per 1 cm
 			break;
 	}
-	
 }
 
 /////////////////////////////////////////////////
@@ -207,34 +234,47 @@ void LVhandle(void)
 	{
 		switch (LV_POS_RST_flag[i])
 		{
-			case 0:									//no need to reset
+			case 0:									//normally work
 				break;
 			case 1:									//PRST CMD is sent, check current POS
-				if (readOPB(i) == PLATE_90_360)		//angle = 90~360
-					LV_POS_RST_flag[i] = 2;
-				else								//angle = 0~90
+				if (readLENGTH(i) != LENGTH_0)		    //stick touch the start point
+				{
 					LV_POS_RST_flag[i] = 3;
+				}
+				else
+				{
+					LV_POS_RST_flag[i] = 5;
+				} 
 				break;
 			case 2:
-				LV_stepToGo[i] = 35;				//rotates 1 degree toward 360
-				if(readOPB(i) != PLATE_90_360)
+				if (readLENGTH(i) != LENGTH_Max)
 				{
-					LV_stepToGo[i] = 0;
 					LV_POS_RST_flag[i] = 4;
+				}
+				else
+				{
+					LV_POS_RST_flag[i] = 5;
 				}
 				break;
 			case 3:
-				LV_stepToGo[i] = -35;					//rotates 1 degree toward 0
-				if(readOPB(i) == PLATE_90_360)
-				{
+				LV_stepToGo[i] = -step_per_cm;				//walk -1 cm until touch the sensor A
+				if(readLENGTH(i) == LENGTH_0)
+				{ 
 					LV_stepToGo[i] = 0;
-					LV_POS_RST_flag[i] = 4;
+					LV_POS_RST_flag[i] = 5;
 				}
 				break;
-			case 4:									//reset pos done
+			case 4:
+				LV_stepToGo[i] = step_per_cm;					//walk 1 cm until touch the sensor B
+				if(readLENGTH(i) == LENGTH_Max)
+				{
+					LV_stepToGo[i] = 0;
+					LV_POS_RST_flag[i] = 5;
+				}
+				break;
+			case 5:									//reset pos done
 				LV_state[i] = state_FTRN;
 				LV_POS_RST_flag[i] = 0;
-				LV_currentlength[i] = 0;
 				break;
 		}
 		
@@ -282,7 +322,7 @@ void LVhandle(void)
 	}
 
 }
-uint8_t readOPB(uint8_t num)
+uint8_t readLENGTH(uint8_t num)
 {
 	switch(num)
 	{
@@ -307,17 +347,17 @@ uint8_t readOPB(uint8_t num)
 	bool B = GPIO_DREAD(phaseB);
 	if (A)
 	{
-		if (B)  //30~60
-			return PLATE_30_60;
-		else  //0~30
-			return PLATE_0_30;
+		if (B)  //AB=11 //something wrong
+			return LENGTH_error;
+		else  //AB=10 only A get the signal //stick touch the start point
+			return LENGTH_0;
 	}
 	else
 	{
-		if (B)  //60~90
-			return PLATE_60_90;
-		else  //90~360
-			return PLATE_90_360;
+		if (B)  //AB=01 only B get the signal //stick touch the end point
+			return LENGTH_Max;
+		else  //AB=00 //normally work
+			return LENGTH_0_Max;
 	}
 
 }
