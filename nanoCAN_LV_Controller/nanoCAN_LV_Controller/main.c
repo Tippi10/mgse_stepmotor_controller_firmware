@@ -118,7 +118,7 @@ void CANhandle(void)
 				LV_currentlength[0] = CAN_MSG[1];
 				LVPosReset(0x01);
 				done = false;
-			}
+			}		
 			else if (CAN_MSG[1] != 0 && LV_POS_RST_flag[0] == 0 && done == true)
 			{
 				CAN_MSG[1] = (CAN_MSG[1] % 16) + ((CAN_MSG[1] / 16) % 16) * 10;
@@ -177,21 +177,21 @@ void LVPosReset(uint8_t Addr)
 	}
 }
 
-void LVSetLength(uint8_t Addr, uint8_t angle) //set {LV} to {degree} //change LVSetDegree to sth else to make it more clear
+void LVSetLength(uint8_t Addr, uint8_t length) //set {LV} to {degree} //change LVSetDegree to sth else to make it more clear
 {
 	switch (Addr)
 	{
 		case LV_1_ADDR:
-			LV_stepToGo[0] = (angle - LV_currentlength[0]) * 50; //  200 steps per 4 cm // 50 steps per 1 cm
+			LV_stepToGo[0] = (length - LV_currentlength[0]) * 50; //  200 steps per 4 cm // 50 steps per 1 cm
 			break;
 		case LV_2_ADDR:
-			LV_stepToGo[0] = (angle - LV_currentlength[0]) * 50; //  200 steps per 4 cm // 50 steps per 1 cm
+			LV_stepToGo[0] = (length - LV_currentlength[0]) * 50; //  200 steps per 4 cm // 50 steps per 1 cm
 			break;
 		case LV_3_ADDR:
-			LV_stepToGo[0] = (angle - LV_currentlength[0]) * 50; //  200 steps per 4 cm // 50 steps per 1 cm
+			LV_stepToGo[0] = (length - LV_currentlength[0]) * 50; //  200 steps per 4 cm // 50 steps per 1 cm
 			break;
 		case LV_4_ADDR:
-			LV_stepToGo[0] = (angle - LV_currentlength[0]) * 50; //  200 steps per 4 cm // 50 steps per 1 cm
+			LV_stepToGo[0] = (length - LV_currentlength[0]) * 50; //  200 steps per 4 cm // 50 steps per 1 cm
 			break;
 	}
 	
