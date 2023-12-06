@@ -29,7 +29,7 @@ void CANhandle(void);
 
 void LVhandle(void);
 void LVPosReset(uint8_t Addr);
-void LVPosMax(uint8_t Addr)
+void LVPosMax(uint8_t Addr);
 void LVSetLength(uint8_t Addr, uint8_t angle); //set {LV} to {length} //no change in angle 'cause it's too time-wasting
 void stepOutput(uint8_t num, bool output);
 void enOutput(uint8_t num, bool output);
