@@ -111,6 +111,18 @@ void CANhandle(void)
 	if( CAN_available())
 	{
 		CANRead();
+		
+		if (CAN_MSG[1] == 0xFF) //emergency stop
+		{
+			LV_stepToGo[0] = 0;
+			LV_POS_RST_flag[0] = 5;
+			done = false;
+		}
+		else
+		{
+			CAN_MSG[1] = (CAN_MSG[1] % 16) + ((CAN_MSG[1] / 16) % 16) * 10;
+		}
+		
 		if (CAN_MSG[0] == 0 && done == true && CAN_MSG[1] <= Maxlength && LV_POS_RST_flag[0] == 0) //length set to what we enter
 		{
 			if (CAN_MSG[1] == 0)
@@ -118,34 +130,27 @@ void CANhandle(void)
 				LVPosReset(0x01);
 				done = false;
 			}
-			else if (CAN_MSG[1] == Maxlength)
+/*			else if (CAN_MSG[1] == Maxlength)  //extend to Max length
 			{
 				LVPosMax(0x01);
 				done = false;
-			}		
+			}	                               */
+			//turn on if the Micro Switch of Max position has been installed
 			else
 			{
-				CAN_MSG[1] = (CAN_MSG[1] % 16) + ((CAN_MSG[1] / 16) % 16) * 10;
 				LVSetStep(0x01,CAN_MSG[1]*step_per_cm);
 				done = false;
 			}
 		}
-		else if (CAN_MSG[0] == 1 && done == true && LV_currentSteps[0] - CAN_MSG[1]*step_per_cm >= 0 && LV_POS_RST_flag[0] == 0) //decrease the length we enter
+		else if (CAN_MSG[0] == 1 && done == true && LV_currentSteps[0] - (CAN_MSG[1]*step_per_cm) >= 0 && LV_POS_RST_flag[0] == 0) //decrease the length we enter
 		{
-			CAN_MSG[1] = (CAN_MSG[1] % 16) + ((CAN_MSG[1] / 16) % 16) * 10;
 			LVSetStep(0x01, LV_currentSteps[0] - CAN_MSG[1]*step_per_cm);
 			done = false;
 		}
-		else if (CAN_MSG[0] == 2 && done == true  && LV_currentSteps[0] + CAN_MSG[1]*step_per_cm <= Maxlength && LV_POS_RST_flag[0] == 0) //increase the length we enter
+		else if (CAN_MSG[0] == 2 && done == true && LV_currentSteps[0]/step_per_cm + CAN_MSG[1] <= Maxlength && LV_POS_RST_flag[0] == 0) //increase the length we enter
 		{
-			CAN_MSG[1] = (CAN_MSG[1] % 16) + ((CAN_MSG[1] / 16) % 16) * 10;
 			LVSetStep(0x01, LV_currentSteps[0] + CAN_MSG[1]*step_per_cm);
 			done = false;
-		}
-		else if (CAN_MSG[1] == 0xFF)
-		{
-			LV_stepToGo[0] = 0;
-			LV_POS_RST_flag[0] = 5;
 		}
 	} //CAN available
 }
@@ -246,6 +251,7 @@ void LVhandle(void)
 				{ 
 					LV_stepToGo[i] = 0;
 					LV_POS_RST_flag[i] = 5;
+					LV_currentSteps[i] = 0;
 				}
 				break;
 			case 4:
@@ -255,6 +261,7 @@ void LVhandle(void)
 				{
 					LV_stepToGo[i] = 0;
 					LV_POS_RST_flag[i] = 5;
+					LV_currentSteps[i] = Maxlength*step_per_cm;
 				}
 				break;
 			case 5:									//reset pos done
