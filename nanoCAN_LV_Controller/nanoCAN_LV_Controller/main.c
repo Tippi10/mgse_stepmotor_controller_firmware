@@ -30,15 +30,14 @@ void CANhandle(void);
 void LVhandle(void);
 void LVPosReset(uint8_t Addr);
 void LVPosMax(uint8_t Addr);
-void LVSetLength(uint8_t Addr, uint8_t angle); //set {LV} to {length} //no change in angle 'cause it's too time-wasting
+void LVSetStep(uint8_t Addr, uint8_t step); //set {LV} to {length} //no change in angle 'cause it's too time-wasting
 void stepOutput(uint8_t num, bool output);
 void enOutput(uint8_t num, bool output);
 void dirOutput(uint8_t num, bool output);
 int8_t ADDR2NUM(uint8_t ADDR);
 uint8_t readLENGTH(uint8_t num);
 int16_t LV_stepToGo[4] = {0, 0, 0, 0};
-uint8_t LV_currentlength[4] = {0, 0, 0, 0};
-uint8_t EmergencyStop[4] = {0, 0, 0, 0};
+uint8_t LV_currentSteps[4] = {0, 0, 0, 0};
 bool LV_HL = true; //step high or low
 
 bool done = true;
@@ -116,36 +115,31 @@ void CANhandle(void)
 		{
 			if (CAN_MSG[1] == 0)
 			{
-				LV_currentlength[0] = CAN_MSG[1];
 				LVPosReset(0x01);
 				done = false;
 			}
 			else if (CAN_MSG[1] == Maxlength)
 			{
-				LV_currentlength[0] = CAN_MSG[1];
 				LVPosMax(0x01);
 				done = false;
 			}		
 			else
 			{
 				CAN_MSG[1] = (CAN_MSG[1] % 16) + ((CAN_MSG[1] / 16) % 16) * 10;
-				LVSetLength(0x01,CAN_MSG[1]);
-				LV_currentlength[0] = CAN_MSG[1];
+				LVSetStep(0x01,CAN_MSG[1]*step_per_cm);
 				done = false;
 			}
 		}
-		else if (CAN_MSG[0] == 1 && done == true && LV_currentlength[0] - CAN_MSG[1] >= 0 && LV_POS_RST_flag[0] == 0) //decrease the length we enter
+		else if (CAN_MSG[0] == 1 && done == true && LV_currentSteps[0] - CAN_MSG[1]*step_per_cm >= 0 && LV_POS_RST_flag[0] == 0) //decrease the length we enter
 		{
 			CAN_MSG[1] = (CAN_MSG[1] % 16) + ((CAN_MSG[1] / 16) % 16) * 10;
-			LVSetLength(0x01, LV_currentlength[0] - CAN_MSG[1]);
-			LV_currentlength[0] = LV_currentlength[0] - CAN_MSG[1];
+			LVSetStep(0x01, LV_currentSteps[0] - CAN_MSG[1]*step_per_cm);
 			done = false;
 		}
-		else if (CAN_MSG[0] == 2 && done == true  && LV_currentlength[0] + CAN_MSG[1] <= Maxlength && LV_POS_RST_flag[0] == 0) //increase the length we enter
+		else if (CAN_MSG[0] == 2 && done == true  && LV_currentSteps[0] + CAN_MSG[1]*step_per_cm <= Maxlength && LV_POS_RST_flag[0] == 0) //increase the length we enter
 		{
 			CAN_MSG[1] = (CAN_MSG[1] % 16) + ((CAN_MSG[1] / 16) % 16) * 10;
-			LVSetLength(0x01, LV_currentlength[0] + CAN_MSG[1]);
-			LV_currentlength[0] = LV_currentlength[0] + CAN_MSG[1];
+			LVSetStep(0x01, LV_currentSteps[0] + CAN_MSG[1]*step_per_cm);
 			done = false;
 		}
 		else if (CAN_MSG[1] == 0xFF)
@@ -194,21 +188,21 @@ void LVPosMax(uint8_t Addr)
 	}
 }
 
-void LVSetLength(uint8_t Addr, uint8_t length) //set {LV} to {degree} //change LVSetDegree to sth else to make it more clear
+void LVSetStep(uint8_t Addr, uint8_t step) //set {LV} to {degree} //change LVSetDegree to sth else to make it more clear
 {
 	switch (Addr)
 	{
 		case LV_1_ADDR:
-			LV_stepToGo[0] = (length - LV_currentlength[0]) * step_per_cm ; //  200 steps per 4 cm // 50 steps per 1 cm
+			LV_stepToGo[0] = step - LV_currentSteps[0] ; //  200 steps per 4 cm // 50 steps per 1 cm
 			break;
 		case LV_2_ADDR:
-			LV_stepToGo[0] = (length - LV_currentlength[0]) * step_per_cm ; //  200 steps per 4 cm // 50 steps per 1 cm
+			LV_stepToGo[0] = step - LV_currentSteps[0] ; //  200 steps per 4 cm // 50 steps per 1 cm
 			break;
 		case LV_3_ADDR:
-			LV_stepToGo[0] = (length - LV_currentlength[0]) * step_per_cm ; //  200 steps per 4 cm // 50 steps per 1 cm
+			LV_stepToGo[0] = step - LV_currentSteps[0] ; //  200 steps per 4 cm // 50 steps per 1 cm
 			break;
 		case LV_4_ADDR:
-			LV_stepToGo[0] = (length - LV_currentlength[0]) * step_per_cm ; //  200 steps per 4 cm // 50 steps per 1 cm
+			LV_stepToGo[0] = step - LV_currentSteps[0] ; //  200 steps per 4 cm // 50 steps per 1 cm
 			break;
 	}
 }
@@ -246,7 +240,8 @@ void LVhandle(void)
 				}
 				break;
 			case 3:
-				LV_stepToGo[i] = -step_per_cm;				//walk -1 cm until touch the sensor A
+				LV_stepToGo[i]--;				//walk -1 step until touch the sensor A
+				LV_currentSteps[i]--;
 				if(readLENGTH(i) == LENGTH_0)
 				{ 
 					LV_stepToGo[i] = 0;
@@ -254,7 +249,8 @@ void LVhandle(void)
 				}
 				break;
 			case 4:
-				LV_stepToGo[i] = step_per_cm;					//walk 1 cm until touch the sensor B
+				LV_stepToGo[i]++;					//walk 1 step until touch the sensor B
+				LV_currentSteps[i]++;
 				if(readLENGTH(i) == LENGTH_Max)
 				{
 					LV_stepToGo[i] = 0;
@@ -281,6 +277,7 @@ void LVhandle(void)
 					dirOutput(i, false);
 					stepOutput(i, true);
 					LV_stepToGo[i]--;
+					LV_currentSteps[i]--;
 				}
 				else if (LV_stepToGo[i]<0)
 				{
@@ -288,6 +285,7 @@ void LVhandle(void)
 					dirOutput(i, true);
 					stepOutput(i, true);
 					LV_stepToGo[i]++;
+					LV_currentSteps[i]++;
 				}
 				else //LV_stepToGo[i] = 0
 				{
