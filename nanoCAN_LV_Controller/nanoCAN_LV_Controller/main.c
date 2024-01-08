@@ -109,18 +109,18 @@ void Error_Handler() //Do while WDT_VECT triggered
 
 void CANhandle(void)
 {
-	if( CAN_available() )
+	if( CAN_available())
 	{
 		CANRead();
-		if (CAN_MSG[0] == 0 && done == true) //length set to what we enter
+		if (CAN_MSG[0] == 0 && done == true && CAN_MSG[1] <= Maxlength && LV_POS_RST_flag[0] == 0) //length set to what we enter
 		{
-			if (CAN_MSG[1] == 0 && LV_POS_RST_flag[0] == 0)
+			if (CAN_MSG[1] == 0)
 			{
 				LV_currentlength[0] = CAN_MSG[1];
 				LVPosReset(0x01);
 				done = false;
 			}
-			else if (CAN_MSG[1] == Maxlength && LV_POS_RST_flag[0] == 0)
+			else if (CAN_MSG[1] == Maxlength)
 			{
 				LV_currentlength[0] = CAN_MSG[1];
 				LVPosMax(0x01);
@@ -134,31 +134,24 @@ void CANhandle(void)
 				done = false;
 			}
 		}
-		else if (CAN_MSG[0] == 1 && done == true) //decrease the length we enter
+		else if (CAN_MSG[0] == 1 && done == true && LV_currentlength[0] - CAN_MSG[1] >= 0 && LV_POS_RST_flag[0] == 0) //decrease the length we enter
 		{
-			if (CAN_MSG[1] != 0 && LV_POS_RST_flag[0] == 0)
-			{
-				CAN_MSG[1] = (CAN_MSG[1] % 16) + ((CAN_MSG[1] / 16) % 16) * 10;
-				LVSetLength(0x01, LV_currentlength[0] - CAN_MSG[1]);
-				LV_currentlength[0] = LV_currentlength[0] - CAN_MSG[1];
-				done = false;
-			}
+			CAN_MSG[1] = (CAN_MSG[1] % 16) + ((CAN_MSG[1] / 16) % 16) * 10;
+			LVSetLength(0x01, LV_currentlength[0] - CAN_MSG[1]);
+			LV_currentlength[0] = LV_currentlength[0] - CAN_MSG[1];
+			done = false;
 		}
-		else if (CAN_MSG[0] == 2 && done == true) //increase the length we enter
+		else if (CAN_MSG[0] == 2 && done == true  && LV_currentlength[0] + CAN_MSG[1] <= Maxlength && LV_POS_RST_flag[0] == 0) //increase the length we enter
 		{
-			if (CAN_MSG[1] != 0 && LV_POS_RST_flag[0] == 0)
-			{
-				CAN_MSG[1] = (CAN_MSG[1] % 16) + ((CAN_MSG[1] / 16) % 16) * 10;
-				LVSetLength(0x01, LV_currentlength[0] + CAN_MSG[1]);
-				LV_currentlength[0] = LV_currentlength[0] + CAN_MSG[1];
-				done = false;
-			}
+			CAN_MSG[1] = (CAN_MSG[1] % 16) + ((CAN_MSG[1] / 16) % 16) * 10;
+			LVSetLength(0x01, LV_currentlength[0] + CAN_MSG[1]);
+			LV_currentlength[0] = LV_currentlength[0] + CAN_MSG[1];
+			done = false;
 		}
-		else if (CAN_MSG[0] == 0xFF)
+		else if (CAN_MSG[1] == 0xFF)
 		{
 			LV_stepToGo[0] = 0;
 			LV_POS_RST_flag[0] = 5;
-			LV_currentlength[0] = 0;
 		}
 	} //CAN available
 }
